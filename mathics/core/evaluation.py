@@ -120,6 +120,10 @@ def run_with_timeout_and_stack(request, timeout):
         p.terminate()
         raise TimeoutInterrupt()
 
+    # FIXME!: queue is not shared from the process so results from the process can't
+    # be gotten this way.
+    # https://docs.python.org/3/library/multiprocessing.shared_memory.html seems pretty heavy, is
+    # 3.8+ specific and assumes SMP.
     success, result = queue.get()
     if success:
         return result
