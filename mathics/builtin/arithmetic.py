@@ -265,12 +265,14 @@ class Plus(BinaryOperator, SympyFunction):
         ops = []
         first = items[0]
 
-        if isinstance(first, Number) and is_negative(first):
+        # FIXME: is_negative doesn't detect <Expression: System`Times[-1, Global`c]>, <Symbol: Global`x>
+        if is_negative(first):
             # -c + x ... => x ... - c
-            last = negate(first)
+            last = Expression("HoldForm", negate(first))
             items = list(items[1:]) + [last]
             values = [Expression("HoldForm", item) for item in items]
             ops = [String("+")] * (len(items)-2) + [String("-")]
+            # FIXME: shouldn't we work on the rest of the list too?
         else:
             # x + -c ... => x - c ..
             values = [Expression("HoldForm", items[0])]
@@ -439,6 +441,7 @@ class Minus(PrefixOperator):
         "Minus[Infix[expr_, op_, 400, grouping_]]": (
             'Prefix[{Infix[expr, op, 400, grouping]}, "-", 399]'
         ),
+        # FIXME: can we do of the -c + <expr> => <expr> - c here?
     }
 
     def apply_int(self, x, evaluation):
