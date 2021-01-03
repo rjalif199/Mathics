@@ -261,18 +261,30 @@ class Plus(BinaryOperator, SympyFunction):
             return False
 
         items = items.get_sequence()
-        values = [Expression("HoldForm", item) for item in items[:1]]
+        assert len(items) > 0
         ops = []
-        for item in items[1:]:
-            if (
-                item.has_form("Times", 1, None) and is_negative(item.leaves[0])
-            ) or is_negative(item):
-                item = negate(item)
-                op = "-"
-            else:
-                op = "+"
-            values.append(Expression("HoldForm", item))
-            ops.append(String(op))
+        first = items[0]
+
+        if isinstance(first, Number) and is_negative(first):
+            # -c + x ... => x ... - c
+            last = negate(first)
+            items = list(items[1:]) + [last]
+            values = [Expression("HoldForm", item) for item in items]
+            ops = [String("+")] * (len(items)-2) + [String("-")]
+        else:
+            # x + -c ... => x - c ..
+            values = [Expression("HoldForm", items[0])]
+            for item in items[1:]:
+                if (
+                    item.has_form("Times", 1, None) and is_negative(item.leaves[0])
+                ) or is_negative(item):
+                    item = negate(item)
+                    op = "-"
+                else:
+                    op = "+"
+                values.append(Expression("HoldForm", item))
+                ops.append(String(op))
+
         return Expression(
             "Infix",
             Expression("List", *values),
